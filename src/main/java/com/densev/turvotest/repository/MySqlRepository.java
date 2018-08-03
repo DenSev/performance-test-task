@@ -1,9 +1,11 @@
 package com.densev.turvotest.repository;
 
 import com.densev.turvotest.app.ConfigProvider;
+import com.densev.turvotest.app.ConnectionProperties;
 import com.densev.turvotest.model.QueryResult;
 import com.google.common.base.Stopwatch;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +14,10 @@ import org.springframework.stereotype.Repository;
 import javax.annotation.PreDestroy;
 import java.sql.*;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Repository
@@ -29,7 +34,7 @@ public class MySqlRepository {
         try {
             List<ConnectionProperties> connectionPropertiesList = configProvider.getConnection();
 
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("com.mysql.cj.jdbc.Driver");
 
             for (ConnectionProperties connectionProperties : connectionPropertiesList) {
                 Connection connection = DriverManager.getConnection(String.format(
@@ -40,6 +45,7 @@ public class MySqlRepository {
                 ), connectionProperties.getUser(), connectionProperties.getPassword());
 
                 connectionMap.put(connectionProperties.getUrl() + ":" + connectionProperties.getPort(), connection);
+                LOG.info("Created connection to {}:{}", connectionProperties.getUrl(), connectionProperties.getPort());
             }
 
         } catch (ClassNotFoundException | SQLException e) {
@@ -58,9 +64,9 @@ public class MySqlRepository {
         }
     }
 
-    public List<QueryResult<List<String[]>>> search(String query) {
+    public List<QueryResult<?>> search(String query) {
 
-        List<QueryResult<List<String[]>>> resultList = new ArrayList<>();
+        List<QueryResult<?>> resultList = new ArrayList<>();
 
         for (Map.Entry<String, Connection> connection : connectionMap.entrySet()) {
 
@@ -70,22 +76,19 @@ public class MySqlRepository {
         return resultList;
     }
 
-    private QueryResult<List<String[]>> search(String connectionName, Connection connection, String query) {
+    private QueryResult<?> search(String connectionName, Connection connection, String query) {
         try (PreparedStatement statement = connection.prepareStatement(query)) {
+
             Stopwatch stopwatch = Stopwatch.createStarted();
             ResultSet resultSet = statement.executeQuery();
             long elapsed = stopwatch.stop().elapsed(TimeUnit.NANOSECONDS);
 
             List<String[]> results = handler.handle(resultSet);
-
-            for (String[] result : results) {
-                System.out.println(Arrays.toString(result));
-            }
             QueryResult<List<String[]>> queryResult = new QueryResult<>(formatter.format(elapsed), results, connectionName);
 
             return queryResult;
         } catch (SQLException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            return new QueryResult<>(ExceptionUtils.getRootCauseMessage(e), connectionName);
         }
     }
 

@@ -1,4 +1,4 @@
-package com.densev.turvotest.repository;
+package com.densev.turvotest.app;
 
 public class ConnectionProperties {
 

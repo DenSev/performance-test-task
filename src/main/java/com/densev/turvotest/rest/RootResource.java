@@ -35,11 +35,11 @@ public class RootResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("search")
     public Response search(@QueryParam("response") Boolean returnResponse, String query) {
-        List<QueryResult<List<String[]>>> results = repository.search(query);
+        List<QueryResult<?>> results = repository.search(query);
         if (!Boolean.TRUE.equals(returnResponse)) {
-            for (QueryResult queryResult : results) {
-                queryResult.setResponse(null);
-            }
+            results.stream()
+                .filter(item -> !Boolean.TRUE.equals(item.isException()))
+                .forEach(item -> item.setResponse(null));
         }
 
         return Response.ok().entity(results).build();
