@@ -84,7 +84,10 @@ public class MySqlRepository {
             long elapsed = stopwatch.stop().elapsed(TimeUnit.NANOSECONDS);
 
             List<String[]> results = handler.handle(resultSet);
-            QueryResult<List<String[]>> queryResult = new QueryResult<>(formatter.format(elapsed), results, connectionName);
+            QueryResult<List<String[]>> queryResult = new QueryResult<>(
+                formatter.format(elapsed) + TimeUnit.NANOSECONDS.name(),
+                results,
+                connectionName);
 
             return queryResult;
         } catch (SQLException e) {
