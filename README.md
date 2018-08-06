@@ -1,6 +1,6 @@
 # turvo-test
 
-# Requirements
+## Requirements
 
 In company ABC we run quite a few queries against our databases, and the queries have different performance
 characteristics. We frequently need to work on optimizing them. We want to build a system that allow us to
@@ -17,7 +17,7 @@ test can execute in parallel against databases A,B,C and collect the results in 
 
 Define a data model, define the rest api and write the code for the service.
 
-# Solution
+## Solution
 
 - Application is a restful service built with Spring Boot and JAX-RS. JAX-RS was chosen because of its clear and simple 
 method of defining REST endpoints and nice way of handling exceptions.
@@ -29,11 +29,11 @@ connection will run in parallel.
 - Request time is measured with a stopwatch and returned as nanoseconds.
 
 
-# Usage
+## Usage
 
 Start application with ```gradlew bootRun```. The application will be available at ```localhost:8080```.
 
-# Example
+## Example
 
 - request:
 ```
@@ -54,7 +54,7 @@ curl -d "SELECT * FROM feedback.posts" -X POST localhost:8080/search
 ]
 ```
 
-# Configuration
+## Configuration
 
 application.properties
 
@@ -79,7 +79,7 @@ config.connection[1].password=1234
 - ```connection.user``` - MySQL db user name
 - ```connection.password``` - MySQL db user password
 
-# Endpoints
+## Endpoints
 
 - ```/``` - root endpoint, basically hello world
 - ```/search``` - main query endpoint, accepts plaintext SQL queries and queries each connected database in 
@@ -87,7 +87,7 @@ parallel, returns elapsed time, connection name and optionally (if ```?response=
 If query resulted in exception - returns exception root cause message and connection name.
 - ```/ex``` - endpoint to test exception message
 
-# Classes and packages
+## Classes and packages
 
 - ```com.densev.turvotest.app.*``` - package containing Spring Boot application class and config classes
 - ```com.densev.turvotest.app.ConfigProvider``` - config class, parsed from ```application.properties``` file
