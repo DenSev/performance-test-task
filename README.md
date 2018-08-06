@@ -1,12 +1,12 @@
-#turvo-test
+# turvo-test
 
 
 
-#usage
+# usage
 
 Start application with ```gradlew bootRun```. The application will be available at ```localhost:8080```.
 
-#configuration
+# configuration
 
 application.properties
 
@@ -31,7 +31,7 @@ config.connection[1].password=1234
 - ```connection.user``` - MySQL db user name
 - ```connection.password``` - MySQL db user password
 
-#endpoints
+# endpoints
 
 - ```/``` - root endpoint, basically hello world
 - ```/search``` - main query endpoint, accepts plaintext SQL queries and queries each connected database in 
