@@ -31,6 +31,8 @@ ext {
     commonsLandVersion = '[3.7,)'
     commonsCollectionsVersion = '[4.1,)'
     commonsDbUtilsVersion = '[1.6,)'
+    testNgVersion = '[6.14, 6.15)'
+    mockitoVersion = '[2.8.0, 2.9.0)'
 }
 
 dependencies {
@@ -43,5 +45,12 @@ dependencies {
     compile "org.apache.commons:commons-collections4:$commonsCollectionsVersion"
     compile "commons-dbutils:commons-dbutils:$commonsDbUtilsVersion"
     runtime('mysql:mysql-connector-java')
-    testCompile('org.springframework.boot:spring-boot-starter-test')
+
+    testCompile "org.mockito:mockito-core:$mockitoVersion"
+    testCompile "org.testng:testng:$testNgVersion"
+}
+
+test {
+    useTestNG()
+    testLogging.setLifecycle(testLogging.debug)
 }

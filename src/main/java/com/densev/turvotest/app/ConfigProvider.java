@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * application.properties configuration, provides exception stack trace flag and connection config
+ */
 @Component
 @PropertySource("classpath:application.properties")
 @ConfigurationProperties("config")

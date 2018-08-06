@@ -4,6 +4,7 @@ import com.densev.turvotest.app.ConfigProvider;
 import com.densev.turvotest.app.ConnectionProperties;
 import com.densev.turvotest.model.QueryResult;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -24,15 +25,18 @@ import java.util.concurrent.*;
 public class MySqlRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(MySqlRepository.class);
-
-    private Map<String, Connection> connectionMap;
-    private Map<String, ExecutorService> executorsMap;
     private static final DecimalFormat formatter = new DecimalFormat("###,###,###");
 
+    private final Map<String, Connection> connectionMap;
+    private final Map<String, ExecutorService> executorsMap;
+    private final ResultSetHandler<List<String[]>> handler;
+
     @Autowired
-    private MySqlRepository(ConfigProvider configProvider) {
-        connectionMap = new HashMap<>();
-        executorsMap = new HashMap<>();
+    private MySqlRepository(ConfigProvider configProvider, ResultSetHandler<List<String[]>> handler) {
+        this.handler = handler;
+
+        ImmutableMap.Builder<String, Connection> connectionBuilder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, ExecutorService> executorsBuilder = ImmutableMap.builder();
         try {
             List<ConnectionProperties> connectionPropertiesList = configProvider.getConnection();
 
@@ -46,10 +50,12 @@ public class MySqlRepository {
                     connectionProperties.getDbName()
                 ), connectionProperties.getUser(), connectionProperties.getPassword());
                 final String connectionName = connectionProperties.getUrl() + ":" + connectionProperties.getPort();
-                connectionMap.put(connectionName, connection);
-                executorsMap.put(connectionName, Executors.newSingleThreadExecutor());
+                connectionBuilder.put(connectionName, connection);
+                executorsBuilder.put(connectionName, Executors.newSingleThreadExecutor());
                 LOG.info("Created connection to {}", connectionName);
             }
+            this.connectionMap = connectionBuilder.build();
+            this.executorsMap = executorsBuilder.build();
 
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -72,16 +78,21 @@ public class MySqlRepository {
 
         List<QueryResult<?>> resultList = new ArrayList<>();
 
-        for (Map.Entry<String, Connection> connection : connectionMap.entrySet()) {
-            try {
-                Future<QueryResult<?>> queryResult = executorsMap.get(connection.getKey())
-                    .submit(() -> search(connection.getKey(), connection.getValue(), query));
+        Map<String, Future<QueryResult<?>>> futureResults = new HashMap<>();
+        connectionMap.forEach((connectionName, connection) -> {
+            Future<QueryResult<?>> queryResult = executorsMap
+                .get(connectionName)
+                .submit(() -> search(connectionName, connection, query));
+            futureResults.put(connectionName, queryResult);
+        });
 
-                resultList.add(queryResult.get());
+        futureResults.forEach((connectionName, futureResult) -> {
+            try {
+                resultList.add(futureResult.get());
             } catch (InterruptedException | ExecutionException e) {
-                resultList.add(new QueryResult<>(ExceptionUtils.getRootCauseMessage(e), connection.getKey()));
+                resultList.add(new QueryResult<>(ExceptionUtils.getRootCauseMessage(e), connectionName));
             }
-        }
+        });
 
         return resultList;
     }
@@ -104,25 +115,4 @@ public class MySqlRepository {
             return new QueryResult<>(ExceptionUtils.getRootCauseMessage(e), connectionName);
         }
     }
-
-    private final ResultSetHandler<List<String[]>> handler = rs -> {
-        if (!rs.next()) {
-            return null;
-        }
-
-        List<String[]> results = new ArrayList<>();
-        do {
-            ResultSetMetaData meta = rs.getMetaData();
-            int cols = meta.getColumnCount();
-            String[] result = new String[cols];
-            /*((ResultSet) rs).getgetRows().get(0).getValue(1, ValueFactory)*/
-            for (int i = 0; i < cols; i++) {
-                result[i] = rs.getString(i + 1);
-            }
-            results.add(result);
-        } while (rs.next());
-
-
-        return results;
-    };
 }

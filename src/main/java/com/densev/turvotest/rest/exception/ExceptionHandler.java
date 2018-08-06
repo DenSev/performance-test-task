@@ -19,7 +19,7 @@ public class ExceptionHandler extends Throwable implements ExceptionMapper<Throw
     private final boolean returnStackTrace;
 
     @Autowired
-    private ExceptionHandler(ConfigProvider configProvider) {
+    ExceptionHandler(ConfigProvider configProvider) {
         this.returnStackTrace = configProvider.getExceptionsReturnStackTrace() != null
             ? configProvider.getExceptionsReturnStackTrace()
             : false;
