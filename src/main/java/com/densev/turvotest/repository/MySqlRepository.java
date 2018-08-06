@@ -76,9 +76,9 @@ public class MySqlRepository {
 
     public List<QueryResult<?>> search(String query) {
 
-        List<QueryResult<?>> resultList = new ArrayList<>();
+        final List<QueryResult<?>> resultList = new ArrayList<>();
 
-        Map<String, Future<QueryResult<?>>> futureResults = new HashMap<>();
+        final Map<String, Future<QueryResult<?>>> futureResults = new HashMap<>();
         connectionMap.forEach((connectionName, connection) -> {
             Future<QueryResult<?>> queryResult = executorsMap
                 .get(connectionName)
@@ -97,7 +97,7 @@ public class MySqlRepository {
         return resultList;
     }
 
-    private QueryResult<?> search(String connectionName, Connection connection, String query) {
+    QueryResult<?> search(String connectionName, Connection connection, String query) {
         try (PreparedStatement statement = connection.prepareStatement(query)) {
 
             Stopwatch stopwatch = Stopwatch.createStarted();
