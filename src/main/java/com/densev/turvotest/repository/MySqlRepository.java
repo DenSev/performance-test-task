@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Repository
 public class MySqlRepository {
@@ -26,11 +26,13 @@ public class MySqlRepository {
     private static final Logger LOG = LoggerFactory.getLogger(MySqlRepository.class);
 
     private Map<String, Connection> connectionMap;
+    private Map<String, ExecutorService> executorsMap;
     private static final DecimalFormat formatter = new DecimalFormat("###,###,###");
 
     @Autowired
     private MySqlRepository(ConfigProvider configProvider) {
         connectionMap = new HashMap<>();
+        executorsMap = new HashMap<>();
         try {
             List<ConnectionProperties> connectionPropertiesList = configProvider.getConnection();
 
@@ -43,9 +45,10 @@ public class MySqlRepository {
                     connectionProperties.getPort(),
                     connectionProperties.getDbName()
                 ), connectionProperties.getUser(), connectionProperties.getPassword());
-
-                connectionMap.put(connectionProperties.getUrl() + ":" + connectionProperties.getPort(), connection);
-                LOG.info("Created connection to {}:{}", connectionProperties.getUrl(), connectionProperties.getPort());
+                final String connectionName = connectionProperties.getUrl() + ":" + connectionProperties.getPort();
+                connectionMap.put(connectionName, connection);
+                executorsMap.put(connectionName, Executors.newSingleThreadExecutor());
+                LOG.info("Created connection to {}", connectionName);
             }
 
         } catch (ClassNotFoundException | SQLException e) {
@@ -62,6 +65,7 @@ public class MySqlRepository {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }
+        executorsMap.values().forEach(ExecutorService::shutdown);
     }
 
     public List<QueryResult<?>> search(String query) {
@@ -69,8 +73,14 @@ public class MySqlRepository {
         List<QueryResult<?>> resultList = new ArrayList<>();
 
         for (Map.Entry<String, Connection> connection : connectionMap.entrySet()) {
+            try {
+                Future<QueryResult<?>> queryResult = executorsMap.get(connection.getKey())
+                    .submit(() -> search(connection.getKey(), connection.getValue(), query));
 
-            resultList.add(search(connection.getKey(), connection.getValue(), query));
+                resultList.add(queryResult.get());
+            } catch (InterruptedException | ExecutionException e) {
+                resultList.add(new QueryResult<>(ExceptionUtils.getRootCauseMessage(e), connection.getKey()));
+            }
         }
 
         return resultList;
@@ -85,7 +95,7 @@ public class MySqlRepository {
 
             List<String[]> results = handler.handle(resultSet);
             QueryResult<List<String[]>> queryResult = new QueryResult<>(
-                formatter.format(elapsed) + TimeUnit.NANOSECONDS.name(),
+                formatter.format(elapsed) + " " + TimeUnit.NANOSECONDS.name(),
                 results,
                 connectionName);
 
