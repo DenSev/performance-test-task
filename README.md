@@ -19,9 +19,9 @@ Define a data model, define the rest api and write the code for the service.
 
 # Solution
 
-- Restful service build with Sprin Boot and JAX-RS. JAX-RS was chosen because of it's clear and simple method of defining REST 
-endpoints and nice way of handling exceptions.
-- Connection to DB can be configured via application.properties file, which supports any number of connections.
+- Application is a restful service built with Spring Boot and JAX-RS. JAX-RS was chosen because of its clear and simple 
+method of defining REST endpoints and nice way of handling exceptions.
+- Connection to DBs can be configured via ```application.properties``` file, which supports any number of connections.
 - For each connection a single thread executor is created so that any requests to that connection will not run in parallel.
 - Search callable is submitted for each connection and after that the data is requested. This way requests to each 
 connection will run in parallel.
