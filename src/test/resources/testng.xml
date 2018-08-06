@@ -1,0 +1,9 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="general">
+    <test name="Unit Tests">
+        <packages>
+            <package name="com.densev.turvotest.*"/>
+        </packages>
+    </test>
+</suite>
